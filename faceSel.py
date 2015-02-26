@@ -18,7 +18,7 @@ def main():
     element = driver.find_element_by_name("pass")
     element.send_keys("pass");
     element = driver.find_element_by_id("loginbutton").click()
-    url = "http://www.facebook.com//photos_albums"
+    url = "http://www.facebook.com/username/photos_albums"
     driver.get(url)
     time.sleep(5)
     
