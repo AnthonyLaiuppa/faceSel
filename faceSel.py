@@ -1,57 +1,78 @@
-#! Usr/bin/env python   
-
-from bs4 import BeautifulSoup
+""" this is a docstring """
+#from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from parser import Parser 
-import time
-
+#from selenium.webdriver.common.keys import Keys
+#from selenium.webdriver.support.ui import WebDriverWait
+from parser import Parser
+import time, os, simplejson
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 def main():
+    """
+        this is the main method
+    """
 
+    """
     #Basic Biz to log into facebook and navigate to albums
+    chromedriver = "/home/mowens/Desktop/facebook/chromedriver"
+    os.environ['webdriver.chrome.driver'] = chromedriver
+
+    #driver = webdriver.Remote(command_executor='http://10.8.0.1:4444/wd/hub',
+    #    desired_capabilities=DesiredCapabilities.CHROME)
+
+    driver = webdriver.Chrome(chromedriver)
+    """
+
     driver = webdriver.Firefox()
     driver.get("http://www.facebook.com/login.php")
+
     element = driver.find_element_by_name("email")
-    element.send_keys("username")
+    element.send_keys()
     element = driver.find_element_by_name("pass")
-    element.send_keys("pass");
+    element.send_keys()
     element = driver.find_element_by_id("loginbutton").click()
-    url = "http://www.facebook.com//photos_albums"
+
+    url = "http://www.facebook.com/mrowens93/photos_albums"
     driver.get(url)
     time.sleep(5)
-    
-    #Something is going to scrape the source
-    #response = driver.page_source #-- Didnt work:(
-    #response = BeautifulSoup(url.read()) -- Didnt work:(
-    #Lines 28 and 29 actually scrape it!!!!!
-    response=driver.page_source.encode('utf-8')
-    html_str=str(response)
-    
-    #Pull the source down into a text file once we bypass the JS
-    target = open("testing.txt", "w")
-    target.write(html_str)
-    target.close()
+
+    response = driver.page_source.encode('utf-8')
+    html_str = str(response)
 
     #Send it to the parser class to sort out albums
     parser = Parser()
     parser.set_soup(html_str)
     albums = parser.get_album_links()
 
-    #print(albums) -- Works up to this point
-
-    for a in albums #<---- Problem statement
-        driver.get(albums["url"])
-        response=driver.page_source.encoude('utf-8')
+    for key, album in albums.items():
+        driver.get(album["url"])
+        response = driver.page_source.encode('utf-8')
         html_str = str(response)
         parser.set_soup(html_str)
-        pictures = parser.get_picture_links()
+        pictures = parser.get_picture_links(key)
 
-    #print(pictures)
+    url = "http://www.facebook.com/mrowens93/photos_of"
+    driver.get(url)
+    time.sleep(5)
 
 
+    while True:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        try:
+            element = driver.find_element_by_class_name("sectionHeader")
+            break
+        except:
+            continue
 
-    driver.close()
+    response = driver.page_source.encode('utf-8')
+    parser = Parser()
+    parser.set_soup(html_str)
+    parser.get_picture_links('tagged')
 
-if __name__ == '__main__': main()
+    parser.create_files()
+    target = open("results.txt", "w")
+    target.write(parser.get_data_json())
+    target.close()
+
+if __name__ == '__main__':
+    main()
